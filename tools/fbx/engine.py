@@ -5,6 +5,7 @@
     engine.py query fbx.yml <name>     # run a named query from the YAML
     engine.py sql   fbx.yml "<sql>"    # ad-hoc SQL over the tables
     engine.py tables fbx.yml           # list tables and row counts
+    engine.py export fbx.yml <name|sql> out.{jsonl,csv,md}
 
 Field paths: dotted, with [*] to fan out over lists (a.b[*].c -> list of c).
 A field that resolves to a one-element list is unwrapped; empty -> null.
@@ -177,6 +178,30 @@ def cmd_sql(cfg: dict, sql: str):
         pass
 
 
+def cmd_export(cfg: dict, name: str, out: str):
+    sql = cfg["queries"].get(name, name)
+    df = connect(cfg).sql(sql).df()
+    path = Path(out).expanduser()
+    ext = path.suffix.lower()
+    if ext == ".jsonl":
+        with open(path, "w", encoding="utf-8") as f:
+            for rec in df.to_dict("records"):
+                f.write(json.dumps(rec, ensure_ascii=False, default=str) + "\n")
+    elif ext == ".csv":
+        df.to_csv(path, index=False)
+    elif ext == ".md":
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(f"# {name}\n\n{len(df)} rows\n\n")
+            for rec in df.to_dict("records"):
+                head = " · ".join(str(rec[c]) for c in df.columns if c != "text" and rec[c] is not None)
+                f.write(f"## {head}\n\n")
+                if "text" in rec and rec["text"]:
+                    f.write(str(rec["text"]).strip() + "\n\n")
+    else:
+        sys.exit("export: use .jsonl, .csv or .md")
+    print(f"{len(df)} rows -> {path}", file=sys.stderr)
+
+
 def cmd_tables(cfg: dict):
     db = lancedb.connect(str(Path(cfg["lance"]).expanduser()))
     names = db.list_tables().tables if hasattr(db.list_tables(), "tables") else db.list_tables()
@@ -196,6 +221,8 @@ def main():
         cmd_sql(cfg, cfg["queries"][rest[0]])
     elif cmd == "sql":
         cmd_sql(cfg, rest[0])
+    elif cmd == "export":
+        cmd_export(cfg, rest[0], rest[1])
     elif cmd == "tables":
         cmd_tables(cfg)
     else:
