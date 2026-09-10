@@ -39,3 +39,19 @@ const bytes = (d) => readdirSync(d).reduce((n, f) => {
   const p = join(d, f); return n + (statSync(p).isDirectory() ? bytes(p) : statSync(p).size);
 }, 0);
 console.log(`disk     fragments=${count("data", ".lance")} manifests=${count("_versions", ".manifest")} txn=${count("_transactions", ".txn")} bytes=${bytes(dir)}`);
+
+// 5. full-text search: icu tokenizer so Thai words split; "จอ" lives in p09 p10
+//    0.27.2 ships lance-index 4.0.0, which has no icu tokenizer — fall back to ngram and say so
+import { Index } from "@lancedb/lancedb";
+let tokenizer = "icu";
+try {
+  await tbl.createIndex("text", { config: Index.fts({ baseTokenizer: "icu" }) });
+} catch (e) {
+  console.log(`icu      ${String(e.message).split("\n")[0].slice(0, 90)}`);
+  tokenizer = "ngram";
+  await tbl.createIndex("text", { config: Index.fts({ baseTokenizer: "ngram", ngramMinLength: 2, ngramMaxLength: 3 }) });
+}
+const fts = await tbl.search("จอ", "fts").limit(3).toArray();
+console.log(`fts 'จอ' (${tokenizer}):`);
+console.table(fts.map((r) => ({ id: r.id, topic: r.topic, _score: r._score.toFixed(2), text: String(r.text).slice(0, 40) })));
+console.log(`indices  ${(await tbl.listIndices()).map((i) => `${i.name}:${i.indexType}`).join(" ")}`);

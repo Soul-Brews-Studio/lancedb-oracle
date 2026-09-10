@@ -7,6 +7,7 @@ One script per runtime, identical behaviour, so the APIs can be diffed side by s
 3. `mergeInsert("id")` — update p11, insert p12
 4. vector search nearest to `[1, 0, 0]`, then the same with `where topic = 'hardware'`
 5. print fragments / manifests / txn / bytes on disk
+6. FTS index on `text` with the `icu` tokenizer, search "จอ" (TS apps)
 
 | runtime | package | version | run |
 |---|---|---|---|
@@ -23,4 +24,5 @@ Every runtime writes the same directory layout; any of them can open a table the
 - Cross-version reads both ways: 0.38 opens the 0.27.2 table and 0.27.2 opens the 0.38 table — 12 rows, version 2, nearest `p02` in both.
 - On disk, 0.38 writes `_versions/latest_version_hint.json`; 0.27.2 does not (same absence lesson 20 saw on S3). Manifests are a few bytes different (694/732 vs 799/845); fragments within 2%.
 - Python 0.38.0 and bun 0.38.0 write byte-identical directories (9412 bytes). Method names differ only in case: `merge_insert` / `mergeInsert`, `when_matched_update_all` / `whenMatchedUpdateAll`, `search(q)` / `vectorSearch(q)`, `to_pandas()` / `toArray()`. Python is sync; TS is `await` everywhere.
-- The Python-side deprecations the lessons hit (`create_fts_index`, `create_scalar_index`, `compact_files`/`cleanup_old_versions`) are not exercised by this app — the next step is to add an FTS index to both and see whether 0.27.2's TS API differs there.
+- **FTS is where 0.27.2 breaks.** `tbl.createIndex("text", { config: Index.fts({ baseTokenizer: "icu" }) })` is the same call in both, but 0.27.2 ships `lance-index 4.0.0` which throws `unknown base tokenizer icu`. Thai word segmentation (lesson 8) is unavailable on the fleet pin; `ngram` still works there and finds p09 p10 for "จอ". The fleet's nine 0.27.2 repos cannot do proper Thai FTS without an upgrade.
+- The Python-side deprecations the lessons hit (`create_fts_index`, `create_scalar_index`, `compact_files`/`cleanup_old_versions`) are Python-only names; the TS surface (`createIndex` + `Index.fts()`) was already the new shape in 0.27.2.
