@@ -1,0 +1,11 @@
+{
+  "name": "lancedb-demo-node",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@lancedb/lancedb": "0.27.2"
+  }
+}
