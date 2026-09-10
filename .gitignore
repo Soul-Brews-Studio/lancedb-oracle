@@ -21,3 +21,5 @@ apps/*/node_modules/
 apps/*/bun.lock
 apps/*/data/
 apps/*/target/
+apps/*/.venv/
+apps/*/uv.lock

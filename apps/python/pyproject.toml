@@ -1,0 +1,8 @@
+[project]
+name = "lancedb-demo-python"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "lancedb==0.38.0",
+    "pandas>=2",
+]
