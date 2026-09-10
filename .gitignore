@@ -15,3 +15,5 @@ lessons/[0-9]*/data/
 public_posts*.jsonl
 posts*.jsonl
 timeline_text*.jsonl
+lessons/12-typescript/node_modules/
+lessons/12-typescript/bun.lock

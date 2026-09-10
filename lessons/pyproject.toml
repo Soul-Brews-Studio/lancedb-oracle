@@ -3,14 +3,18 @@ name = "01-lancedb-basics"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "boto3>=1.43.91",
     "duckdb>=1.5.5",
     "jupyterlab>=4.6.3",
     "jupytext>=1.19.5",
     "lancedb>=0.38.0",
     "matplotlib>=3.11.1",
+    "moto[server]>=5.2.3",
     "pandas>=3.0.5",
     "pip>=26.2.1",
+    "polars>=1.44.2",
     "pyarrow>=25.0.1",
+    "pylance>=11.0.0",
     "pyyaml>=6.0.3",
     "sentence-transformers>=6.0.1",
 ]

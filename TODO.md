@@ -1,29 +1,23 @@
 # TODO — Lance Oracle
 
-Index first. Full plan with sources and methods: `ψ/writing/lesson-plan.md`.
+Full plan with sources and methods: `ψ/writing/lesson-plan.md`, `ψ/writing/research/`.
 
-- [ ] L10 compaction + cleanup — `compact_files()` then `cleanup_old_versions()`; fragment count before/after
-- [ ] L11 IVF_PQ — 5–10k random vectors, `create_index`, latency before/after (first lesson that grows)
-- [ ] L12 Python vs TypeScript — open one table from both bindings
 - [ ] `apps/` demo — same tiny app in python / node (0.27.2, fleet pin) / bun (0.38) / rust; diff the APIs
-- [ ] Never promise `IVF_HNSW_FLAT` in Python — not in SDK (lancedb#3331)
-- [ ] R1 — source map: `lancedb/lancedb` vs `lancedb/lance`, which layer owns what
-- [ ] R2 — version archaeology 0.26 → 0.38; breaking changes per fleet repo
+- [ ] R2 — version archaeology 0.26 → 0.38; four deprecations already caught (see README); map each fleet repo's usage against them
 - [ ] R4 — fleet usage patterns: lance-indexer, session-dream, jsonl-oracle, arra-v5, omx-grokbot
 - [ ] R3 — read manifest format from `lance` protos; confirm `u64::MAX - version` naming
 - [ ] R5 — read nexus-oracle `search-bench/eval/*.json`, rerun one target, write the number
 - [ ] R6 — correct digger: search-bench results exist; handoff to digger inbox
+- [ ] L11 recall numbers vary per run (k-means init) — pin or widen the prose ranges
+- [ ] L19 — DuckDB `lance` extension unavailable on osx_arm64 (404); retest on linux
 - [ ] Post `ψ/outbox/awaken_2026-09-10_fast.md` to arra-oracle-v3 as issue (Nat said later)
 - [ ] `/awaken --soul-sync`
+- [ ] Never promise `IVF_HNSW_FLAT` in Python — not in SDK (lancedb#3331)
 
 ## Done
-- [x] L1–L6 `lessons/01-basics` — table, vectors, ORM, CRUD, query+join, migration (2026-09-10)
-- [x] Repo public, Colab badges, MIT (2026-09-10)
-- [x] L13 `lessons/13-multi-table-memory` — episodic/semantic/procedural, DuckDB join (2026-09-10)
-- [x] L9 `lessons/09-hybrid` — vector / fts / hybrid three-way, RRF by hand (2026-09-10)
-- [x] L8 `lessons/08-fts` — create_index(FTS); simple vs icu vs ngram on Thai (2026-09-10)
-- [x] L7 `lessons/07-embeddings` — hand vectors vs multilingual MiniLM on the 11 posts (2026-09-10)
-- [x] L14 `lessons/14-prefilter-postfilter` — postfilter returns empty when top-k misses (2026-09-10)
+- [x] L1–L20 all written, run, on Colab (2026-09-10)
+- [x] `lessons/data/nat_posts.jsonl` — 11 real posts, shared by lessons 7–20 (2026-09-10)
 - [x] `tools/fbx` — YAML engine, 7 Facebook zips -> Lance, 25k posts / 1M messages (2026-09-10)
 - [x] Research: course 13-20, agent memory, reading corpus in `ψ/writing/research/` (2026-09-10)
+- [x] Repo public, Colab badges, MIT (2026-09-10)
 - [x] `/awaken --fast` — identity, soul, philosophy (2026-09-10)
