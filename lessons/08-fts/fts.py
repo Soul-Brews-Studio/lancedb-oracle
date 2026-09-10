@@ -65,24 +65,45 @@ tbl.create_index("text", config=FTS(base_tokenizer="ngram", ngram_min_length=2, 
 fts("ความทรงจำ")
 
 # %% [markdown]
-# สรุปสามแบบบนคำเดียวกัน
-#
-# | tokenizer | "จอ" | "ความทรงจำ" | ข้อสังเกต |
-# |---|---|---|---|
-# | simple | ว่าง | ว่าง | ใช้กับไทยไม่ได้ |
-# | icu | p09 p10 | p03 | ตัดคำถูก ผลแม่น |
-# | ngram | p09 p10 | p03 + 3 ขยะ | เจอทุกอย่าง index ใหญ่กว่า |
-#
+# **สรุปในตารางเดียว** — สร้าง index ทั้งสามแบบอีกรอบ ยิงคำถามชุดเดียวกัน
+# แถว = tokenizer คอลัมน์ = คำค้น ช่อง = id ที่เจอ (— คือไม่เจอ)
+# `simple` ว่างทุกช่องที่เป็นไทย · `icu` ตรงเป๊ะ · `ngram` เจอเกิน ("ความทรงจำ" ได้ 5 ทั้งที่ควรได้ 1)
 # สำหรับความจำ agent ที่มีไทยปน `icu` คือค่าที่ควรตั้ง
+
+# %%
+import pandas as pd
+
+TOKENIZERS = {
+    "simple": FTS(),
+    "icu": FTS(base_tokenizer="icu"),
+    "ngram 2-3": FTS(base_tokenizer="ngram", ngram_min_length=2, ngram_max_length=3),
+}
+QUERIES = ["Memory", "Claude", "จอ", "ความทรงจำ"]
+summary = []
+for name, cfg in TOKENIZERS.items():
+    tbl.create_index("text", config=cfg, replace=True)
+    row = {"tokenizer": name}
+    for q in QUERIES:
+        ids = [h["id"] for h in tbl.search(q, query_type="fts").limit(5).to_list()]
+        row[f'"{q}"'] = " ".join(ids) if ids else "—"
+    summary.append(row)
+pd.DataFrame(summary)
 
 # %% [markdown]
 # บน disk index อยู่ใน `_indices/` แยกจาก data fragment
-# สร้าง index สามครั้ง = สาม directory ของเก่าไม่หาย (Nothing is Deleted)
+# สร้าง index ทั้งหมด 6 ครั้ง = 6 directory ของเก่าไม่หาย (Nothing is Deleted) มีแค่อันล่าสุดที่ใช้งาน
+# `ngram` ใหญ่กว่า `icu` เกือบ 3 เท่า (25.7 KB กับ 9.4 KB) เพราะทุกข้อความแตกเป็นชิ้นเล็กมากกว่า
 # `add()` แถวใหม่หลังจากนี้ ไม่เข้า index อัตโนมัติ ต้อง `optimize()` (บทที่ 10)
 
 # %%
 from pathlib import Path
-for d in sorted(Path("data/posts.lance/_indices").iterdir(), key=lambda p: p.stat().st_mtime):
-    n = sum(f.stat().st_size for f in d.rglob("*") if f.is_file())
-    print(f"{d.name[:8]}…  {n:>7} bytes")
-print("live index:", [i.name for i in tbl.list_indices()])
+live = {i.name for i in tbl.list_indices()}
+dirs = sorted(Path("data/posts.lance/_indices").iterdir(), key=lambda p: p.stat().st_mtime)
+labels = ["simple", "icu", "ngram 2-3"] * 2
+pd.DataFrame([{
+    "order": i + 1,
+    "tokenizer": labels[i] if i < len(labels) else "?",
+    "index dir": d.name[:8] + "…",
+    "bytes": sum(f.stat().st_size for f in d.rglob("*") if f.is_file()),
+    "live?": "✓" if i == len(dirs) - 1 else "",
+} for i, d in enumerate(dirs)])

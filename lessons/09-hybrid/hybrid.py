@@ -38,22 +38,32 @@ tbl.add([{k: p[k] for k in ("id", "topic", "text")} for p in load("nat_posts.jso
 tbl.create_index("text", config=FTS(base_tokenizer="icu"))
 
 # %% [markdown]
-# helper เดียว ยิงสามแบบด้วยคำถามเดียวกัน วาง 3 คอลัมน์เทียบกัน
+# helper เดียว ยิงสามแบบด้วยคำถามเดียวกัน ได้ตารางเดียว แถวละอันดับ (1 2 3)
+# แต่ละวิธีมีสองคอลัมน์ id กับข้อความ แล้วตามด้วยคะแนนของวิธีนั้น
 # vector ใช้ `_distance` (ต่ำ = ดี) · fts ใช้ `_score` (สูง = ดี) · hybrid ใช้ `_relevance_score` (สูง = ดี)
 
 # %%
 import pandas as pd
+from IPython.display import display
+
+snippet = {p["id"]: p["text"][:24] for p in load("nat_posts.jsonl")}
 
 def three_ways(q, k=3):
     v = tbl.search(q, query_type="vector").limit(k).to_list()
     f = tbl.search(q, query_type="fts").limit(k).to_list()
     h = tbl.search(q, query_type="hybrid").rerank(reranker=RRFReranker()).limit(k).to_list()
-    pad = lambda xs, key, fmt: [f"{x['id']} {fmt(x[key])}" for x in xs] + [""] * (k - len(xs))
-    return pd.DataFrame({
-        "vector (_distance)": pad(v, "_distance", lambda d: f"{d:.2f}"),
-        "fts (_score)": pad(f, "_score", lambda s: f"{s:.2f}"),
-        "hybrid (_relevance_score)": pad(h, "_relevance_score", lambda s: f"{s:.3f}"),
-    })
+    rows = []
+    for rank in range(k):
+        r = {"rank": rank + 1}
+        for name, hits, key, nd in (("vector", v, "_distance", 2), ("fts", f, "_score", 2), ("hybrid", h, "_relevance_score", 4)):
+            hit = hits[rank] if rank < len(hits) else None
+            r[f"{name} id"] = hit["id"] if hit else "—"
+            r[f"{name} text"] = snippet[hit["id"]] if hit else ""
+            r[f"{name} {key}"] = round(hit[key], nd) if hit else None
+        rows.append(r)
+    df = pd.DataFrame(rows).set_index("rank")
+    df.columns = pd.MultiIndex.from_tuples([(c.split(" ", 1)[0], c.split(" ", 1)[1]) for c in df.columns])
+    return df
 
 # %% [markdown]
 # **คำถาม 1 — "จอ ESP32"**
@@ -83,18 +93,40 @@ three_ways("Messenger")
 
 # %% [markdown]
 # **RRF ทำงานยังไง** — Reciprocal Rank Fusion ไม่สนคะแนนดิบ สนแค่อันดับ
-# แต่ละฝั่งให้ 1/(60 + อันดับ) แล้วบวกกัน
-# "ความทรงจำ": p03 อันดับ 1 ใน FTS อันดับ 2 ใน vector = 1/61 + 1/62 = 0.0325 ตรงกับ `_relevance_score` ข้างบน
-# "Messenger": p06 อันดับ 1 ทั้งสองฝั่ง = 1/61 + 1/61 = 0.0328
-# ฝั่งที่ไม่มี p ตัวนั้นในลิสต์ ให้ 0 เลยตกอันดับเอง
+# แต่ละฝั่งให้ 1/(60 + อันดับ) แล้วบวกกัน ฝั่งไหนไม่มีโพสต์นั้น ให้ 0
+#
+# ตารางข้างล่างคำนวณเองทีละขั้น แล้วเทียบกับ `_relevance_score` ที่ LanceDB คืนมา
+# อ่านแถวแรกของ "ความทรงจำ": p03 อันดับ 2 ฝั่ง vector = 1/62 = 0.0161 · อันดับ 1 ฝั่ง fts = 1/61 = 0.0164
+# บวกกัน 0.0325 ตรงกับ LanceDB ทศนิยมสี่ตำแหน่ง คอลัมน์ `match` ขึ้น ✓
+# p01 p04 มีแค่ฝั่ง vector fts ให้ 0 เลยตกมาอยู่อันดับ 2 3 ด้วยคะแนนแค่ครึ่งเดียว
 #
 # ไม่มีโมเดลเพิ่ม ไม่มี GPU reranker แบบอื่น (cross-encoder) ต้องโหลดโมเดลอีกตัว
 
 # %%
+K = 60
+
+def rrf_breakdown(q, k=3):
+    v = [x["id"] for x in tbl.search(q, query_type="vector").limit(k).to_list()]
+    f = [x["id"] for x in tbl.search(q, query_type="fts").limit(k).to_list()]
+    lance = {x["id"]: x["_relevance_score"]
+             for x in tbl.search(q, query_type="hybrid").rerank(reranker=RRFReranker()).limit(k).to_list()}
+    rows = []
+    for pid in dict.fromkeys(v + f):
+        vr = v.index(pid) + 1 if pid in v else None
+        fr = f.index(pid) + 1 if pid in f else None
+        pv = 1 / (K + vr) if vr else 0.0
+        pf = 1 / (K + fr) if fr else 0.0
+        rows.append({
+            "id": pid, "text": snippet[pid],
+            "vector rank": vr or "—", "fts rank": fr or "—",
+            f"1/({K}+vr)": round(pv, 4), f"1/({K}+fr)": round(pf, 4),
+            "rrf sum": round(pv + pf, 4),
+            "lancedb _relevance_score": round(lance[pid], 4) if pid in lance else None,
+            "match": "✓" if pid in lance and abs(lance[pid] - (pv + pf)) < 1e-4 else "",
+        })
+    df = pd.DataFrame(rows).sort_values("rrf sum", ascending=False).reset_index(drop=True)
+    df.insert(0, "question", [q] + [""] * (len(df) - 1))
+    return df
+
 for q in ["ความทรงจำ", "Messenger"]:
-    v = [x["id"] for x in tbl.search(q, query_type="vector").limit(3).to_list()]
-    f = [x["id"] for x in tbl.search(q, query_type="fts").limit(3).to_list()]
-    ids = dict.fromkeys(v + f)
-    rrf = {i: (1 / (60 + v.index(i) + 1) if i in v else 0) + (1 / (60 + f.index(i) + 1) if i in f else 0) for i in ids}
-    top = sorted(rrf.items(), key=lambda kv: -kv[1])[:3]
-    print(q, "->", [(i, round(s, 4)) for i, s in top])
+    display(rrf_breakdown(q))

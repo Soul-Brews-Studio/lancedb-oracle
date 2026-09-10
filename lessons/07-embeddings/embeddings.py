@@ -54,10 +54,13 @@ print(auto.schema.field("vector"))   # 384 dims, nobody typed them
 
 # %% [markdown]
 # **เทียบเพื่อนบ้าน** — ทุกโพสต์ ถามว่าใครใกล้ที่สุด (ไม่นับตัวเอง)
-# ซ้ายคือคำตอบจาก vector ทำมือ ขวาคือจากโมเดล ตรงกันไหม หัวข้อเดียวกันไหม
+# คอลัมน์ `hand→` คือคำตอบจาก vector ทำมือ `auto→` คือจากโมเดล ข้าง ๆ มีข้อความของเพื่อนบ้านให้อ่าน
+# ดูสองคอลัมน์สุดท้าย เพื่อนบ้านตรงกันแค่ 2 จาก 11 (p09 p11) แต่โมเดลยังรักษาหัวข้อเดิมได้ 7 จาก 11
+# แถวที่ ✗ คือโมเดลได้ยินคำว่า "Claude Code" ดังกว่าหัวข้อ เช่น p03 ไปหา p06
 
 # %%
 import pandas as pd
+from IPython.display import display
 
 def nearest(tbl, p, k=2):
     hits = tbl.search(p["vector"] if "vector" in p else p["text"]).limit(k + 1).to_list()
@@ -65,34 +68,40 @@ def nearest(tbl, p, k=2):
 
 hand_rows = {r["id"]: r for r in hand.to_pandas().to_dict("records")}
 topic = {p["id"]: p["topic"] for p in posts}
+snippet = {p["id"]: p["text"][:26] for p in posts}
 rows = []
 for p in posts:
     h = nearest(hand, hand_rows[p["id"]], 1)[0]
     a = nearest(auto, {"id": p["id"], "text": p["text"]}, 1)[0]
-    rows.append({"post": p["id"], "topic": p["topic"], "hand→": h, "auto→": a,
-                 "same?": "✓" if h == a else "", "auto same topic?": "✓" if topic[a] == p["topic"] else "✗"})
+    rows.append({"post": p["id"], "topic": p["topic"], "text": snippet[p["id"]],
+                 "hand→": h, "hand→ text": snippet[h],
+                 "auto→": a, "auto→ text": snippet[a],
+                 "same neighbor?": "✓" if h == a else "",
+                 "auto kept topic?": "✓" if topic[a] == p["topic"] else "✗"})
 pd.DataFrame(rows)
 
 # %% [markdown]
 # **ถามด้วยข้อความ** — vector ทำมือทำแบบนี้ไม่ได้ ต้องแปลงคำถามเป็นตัวเลขเอง
 # ตาราง `auto` รับ string ตรง ๆ โมเดล embed คำถามให้ แล้วค่อยวัดระยะ
+# สามคำถาม สามตาราง ดู `topic` ของอันดับ 1 ทุกคำถามตรงหัวข้อ `_distance` ยิ่งต่ำยิ่งใกล้
 
 # %%
 for q in ["สร้าง memory ให้ AI", "ต่อจอกับ ESP32", "agent หลายตัวคุยกัน"]:
-    hits = auto.search(q).limit(2).to_pandas()
-    print(f"\nQ: {q}")
-    for _, h in hits.iterrows():
-        print(f"   {h['id']} {h['topic']:<9} {h['_distance']:.3f}  {h['text'][:45]}")
+    df = auto.search(q).limit(3).to_pandas()[["id", "topic", "_distance", "text"]]
+    df.insert(0, "question", [q] + [""] * (len(df) - 1))
+    display(df.assign(text=lambda d: d.text.str[:40]).round({"_distance": 3}))
 
 # %% [markdown]
-# บน disk ตาราง `auto` ใหญ่กว่า `hand` เพราะ 384 float ต่อแถวแทน 3
+# บน disk ตาราง `auto` ใหญ่กว่า `hand` ราว 4.5 เท่า เพราะ 384 float ต่อแถวแทน 3
 # 11 แถวยังเล็กมาก แต่สัดส่วนนี้คงที่ ล้านแถวคือ 1.5 GB สำหรับ vector อย่างเดียว
 
 # %%
 from pathlib import Path
-for name in ("hand", "auto"):
-    size = sum(f.stat().st_size for f in Path(f"data/{name}.lance/data").glob("*.lance"))
-    print(f"{name:<5} {size:>7} bytes")
+pd.DataFrame([
+    {"table": name, "rows": 11, "vector dims": dims,
+     "bytes on disk": sum(f.stat().st_size for f in Path(f"data/{name}.lance/data").glob("*.lance"))}
+    for name, dims in (("hand", 3), ("auto", 384))
+])
 
 # %% [markdown]
 # **ดูด้วยตา** — ย่อทั้งสอง space ลงมา 2 มิติด้วย PCA แล้ววางคู่กัน

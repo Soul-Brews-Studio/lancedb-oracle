@@ -17,6 +17,7 @@ sys.path.insert(0, "../data")
 from lesson_data import load
 
 import datetime as dt
+import pandas as pd
 import lancedb
 from lancedb.index import BTree, Bitmap
 
@@ -30,23 +31,27 @@ tbl.to_pandas()[["id", "date", "ts", "topic"]]
 # **ก่อนมี index** — ดู plan ของ query ที่กรอง topic กับช่วงเวลา
 # `explain_plan()` คืน string บอกว่า Lance จะทำอะไร ยังไม่รัน
 # บรรทัดล่างสุดคือ `LanceRead ... full_filter=...` = อ่าน column topic กับ ts ทุกแถว แล้วค่อยกรองในตัว
+# ผลลัพธ์ 4 แถว memory หลัง 2026-07-01 (p01 p02 p03 p04)
 
 # %%
 CUTOFF = int(dt.datetime(2026, 7, 1).timestamp())
-q = lambda: tbl.search().where(f"topic = 'memory' AND ts > {CUTOFF}").select(["id", "date", "topic"]).limit(10)
-print(q().explain_plan())
-q().to_pandas()
+q = lambda: tbl.search().where(f"topic = 'memory' AND ts > {CUTOFF}").select(["id", "date", "topic", "text"]).limit(10)
+
+plan_before = q().explain_plan()
+print("=== plan BEFORE index ===")
+print(plan_before)
+q().to_pandas().assign(text=lambda d: d.text.str[:40])
 
 # %% [markdown]
 # **สร้าง index สองอัน**
 # API ปัจจุบันคือ `create_index(col, config=Bitmap())` / `BTree()`
 # `create_scalar_index(col, index_type="BITMAP")` ยังเรียกได้แต่ deprecated ตั้งแต่ 0.25 เหมือน FTS ในบทที่ 8
+# `list_indices()` แสดงชื่อ index ชนิด และ column ที่ครอบ
 
 # %%
 tbl.create_index("topic", config=Bitmap())
 tbl.create_index("ts", config=BTree())
-for i in tbl.list_indices():
-    print(i.name, i.index_type, i.columns)
+pd.DataFrame([{"index": i.name, "type": i.index_type, "columns": ", ".join(i.columns)} for i in tbl.list_indices()])
 
 # %% [markdown]
 # **หลังมี index** — query เดิม plan เปลี่ยน
@@ -55,8 +60,24 @@ for i in tbl.list_indices():
 # ผลลัพธ์เหมือนเดิมทุกแถว ต่างกันแค่วิธีหา
 
 # %%
-print(q().explain_plan())
-q().to_pandas()
+plan_after = q().explain_plan()
+print("=== plan AFTER index ===")
+print(plan_after)
+q().to_pandas().assign(text=lambda d: d.text.str[:40])
+
+# %% [markdown]
+# **สรุปสองแผนในตารางเดียว** — เอาบรรทัดล่างสุดของแต่ละ plan มาวางคู่กัน
+# ก่อน: `LanceRead` อ่านทุกแถวแล้วกรองด้วย `full_filter`
+# หลัง: `ScalarIndexQuery` ถาม index ก่อน แล้ว `LanceRead` อ่านแค่แถวที่ index ชี้
+
+# %%
+def leaf(plan):
+    return plan.strip().splitlines()[-1].strip()[:90]
+
+pd.DataFrame([
+    {"step": "before", "indexes": "none", "plan leaf": leaf(plan_before), "rows": len(q().to_list())},
+    {"step": "after", "indexes": "topic Bitmap + ts BTree", "plan leaf": leaf(plan_after), "rows": len(q().to_list())},
+])
 
 # %% [markdown]
 # **ทำไม 11 แถวถึงไม่ควรทำ** — index คือไฟล์เพิ่ม อ่านเพิ่ม
@@ -66,8 +87,7 @@ q().to_pandas()
 
 # %%
 from pathlib import Path
-data_bytes = sum(f.stat().st_size for f in Path("data/posts.lance/data").glob("*.lance"))
-print(f"data fragments  {data_bytes:>7} bytes")
-for d in sorted(Path("data/posts.lance/_indices").iterdir()):
-    n = sum(f.stat().st_size for f in d.rglob("*") if f.is_file())
-    print(f"index {d.name[:8]}…  {n:>7} bytes")
+disk = [{"what": "data fragments", "bytes": sum(f.stat().st_size for f in Path("data/posts.lance/data").glob("*.lance"))}]
+for i, d in zip(tbl.list_indices(), sorted(Path("data/posts.lance/_indices").iterdir())):
+    disk.append({"what": f"index {i.name} ({i.index_type})", "bytes": sum(f.stat().st_size for f in d.rglob("*") if f.is_file())})
+pd.DataFrame(disk)

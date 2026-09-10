@@ -16,17 +16,22 @@ if not pathlib.Path("../data/lesson_data.py").exists():
 sys.path.insert(0, "../data")
 from lesson_data import load
 
+import pandas as pd
 import lancedb
 posts = load("nat_posts.jsonl")
+results = []
 
 def demo(db, label):
     tbl = db.create_table("posts", data=posts, mode="overwrite")
     tbl.add([{"id": "p12", "date": "2026-09-10", "topic": "memory", "vector": [0.9, 0.1, 0.0], "text": "added after create"}])
     hit = tbl.search([1.0, 0.0, 0.0]).limit(1).to_list()[0]
-    print(f"{label:<6} rows={tbl.count_rows()} version={tbl.version} nearest={hit['id']}")
+    results.append({"backend": label, "rows": tbl.count_rows(), "version": tbl.version,
+                    "nearest id": hit["id"], "nearest text": hit["text"][:30]})
+    return pd.DataFrame(results)
 
 # %% [markdown]
-# **(1) local** — เหมือนทุกบทที่ผ่านมา
+# **(1) local** — เหมือนทุกบทที่ผ่านมา create 11 แถว add 1 แถว search 1 ครั้ง
+# ได้ 12 แถว version 2 ใกล้สุดคือ p02
 
 # %%
 demo(lancedb.connect("./data/local"), "local")
@@ -36,11 +41,13 @@ demo(lancedb.connect("./data/local"), "local")
 # แล้ว connect ด้วย `s3://` + `storage_options`
 # key ชื่อตาม `object_store` crate: `aws_endpoint` `aws_access_key_id` `aws_secret_access_key` `aws_region` `allow_http`
 # `allow_http` ต้องเปิดเพราะ moto ไม่มี TLS S3 จริงไม่ต้องใส่
+# แถวใหม่ในตารางต้องได้ตัวเลขเดียวกับ local ทุกช่อง ต่างแค่ `backend`
 
 # %%
-import subprocess, time, boto3
+import subprocess, time, atexit, boto3
 
 moto = subprocess.Popen([sys.executable, "-m", "moto.server", "-p", "5555"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+atexit.register(moto.terminate)   # killed even if a later cell fails
 time.sleep(2)
 
 s3 = boto3.client("s3", endpoint_url="http://127.0.0.1:5555",
@@ -49,15 +56,37 @@ s3.create_bucket(Bucket="lessons")
 
 opts = {"aws_endpoint": "http://127.0.0.1:5555", "aws_access_key_id": "x", "aws_secret_access_key": "x",
         "aws_region": "us-east-1", "allow_http": "true"}
-demo(lancedb.connect("s3://lessons/lance", storage_options=opts), "s3")
+try:
+    df = demo(lancedb.connect("s3://lessons/lance", storage_options=opts), "s3 (moto)")
+except Exception:
+    moto.terminate(); raise
+df
 
 # %% [markdown]
 # **ใน bucket มีอะไร** — directory เดิม `_transactions/` `_versions/` `data/` แค่กลายเป็น key ใน S3
+# สองแถวแรกคือ txn สองครั้ง (create + add) ถัดมา manifest สองอัน แล้ว fragment สองไฟล์
 # สังเกต `latest_version_hint.json` ไม่มีบน S3 เพราะ object store ไม่ต้องใช้ hint ใช้ list แล้วเอาชื่อน้อยสุดแทน
 
 # %%
-for o in s3.list_objects_v2(Bucket="lessons")["Contents"]:
-    print(f"{o['Size']:>6}  {o['Key'].replace('lance/posts.lance/', '')}")
+objs = s3.list_objects_v2(Bucket="lessons")["Contents"]
+pd.DataFrame([{"key": o["Key"].replace("lance/posts.lance/", ""), "size": o["Size"]} for o in objs])
+
+# %% [markdown]
+# **เทียบสอง backend ไฟล์ต่อไฟล์** — ชนิดไฟล์และจำนวนเท่ากัน ขนาดรวมต่างกันแค่ hint file
+# นี่คือหลักฐานว่า Lance ไม่รู้ว่าตัวเองอยู่บน S3 มันเขียน key เหมือนเขียน path
+
+# %%
+from pathlib import Path
+local_files = [p for p in Path("data/local/posts.lance").rglob("*") if p.is_file()]
+kind = lambda name: "txn" if name.endswith(".txn") else "manifest" if name.endswith(".manifest") else "fragment" if name.endswith(".lance") else "hint"
+rows = []
+for label, names, sizes in [("local", [p.name for p in local_files], [p.stat().st_size for p in local_files]),
+                            ("s3 (moto)", [o["Key"] for o in objs], [o["Size"] for o in objs])]:
+    counts = {}
+    for n, s in zip(names, sizes):
+        k = kind(n); counts.setdefault(k, [0, 0]); counts[k][0] += 1; counts[k][1] += s
+    rows.append({"backend": label, **{f"{k} files": v[0] for k, v in sorted(counts.items())}, "total bytes": sum(sizes)})
+pd.DataFrame(rows).fillna(0).astype({c: int for c in ("fragment files", "hint files", "manifest files", "txn files")})
 
 # %% [markdown]
 # **(3) LanceDB Cloud** — บริษัทเดียวกันโฮสต์ให้ ไม่ได้รันในบทนี้ (ต้องมี api key)
@@ -82,8 +111,6 @@ for o in s3.list_objects_v2(Bucket="lessons")["Contents"]:
 # จุดที่จะย้ายไป S3 คือตอนที่ oracle สองตัวบนสองเครื่องต้องเห็นความจำเดียวกัน
 
 # %%
-from pathlib import Path
-local = sum(f.stat().st_size for f in Path("data/local/posts.lance").rglob("*") if f.is_file())
-s3_total = sum(o["Size"] for o in s3.list_objects_v2(Bucket="lessons")["Contents"])
-print(f"local bytes: {local}  |  s3 bytes: {s3_total}  (same data, hint file is the only difference)")
 moto.terminate()
+moto.wait(timeout=5)
+pd.DataFrame([{"moto server": "stopped", "exit code": moto.returncode}])

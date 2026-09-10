@@ -53,14 +53,20 @@ procedural = db.create_table("procedural", data=[
 # %% [markdown]
 # **Recall** — คำถาม "เรื่อง memory" = vector `[0, 1, 0]`
 # ยิง vector เดียวกันใส่ทั้งสามตาราง แต่ละตารางตอบในภาษาของตัวเอง
-# episodic ตอบว่าเกิดอะไร semantic ตอบว่ารู้อะไร procedural ตอบว่าทำยังไง
+# แถวละตาราง ดู column `text` ประกอบ `_distance`
+# episodic ตอบว่าเกิดอะไร (event 2) · semantic ตอบว่ารู้อะไร (fact 11) · procedural ตอบว่าทำยังไง (skill 101)
+# procedural ใกล้สุด 0.02 เพราะ vector `[0.1, 0.9, 0]` แทบซ้อนกับคำถาม
 
 # %%
+import pandas as pd
+
 q = [0.0, 1.0, 0.0]
-for name, tbl in [("episodic", episodic), ("semantic", semantic), ("procedural", procedural)]:
-    hit = tbl.search(q).limit(1).to_list()[0]
-    text = hit.get("text") or hit.get("steps")
-    print(f"{name:<11} d={hit['_distance']:.2f}  {text}")
+rows = []
+for name, tbl, key in [("episodic", episodic, "event_id"), ("semantic", semantic, "fact_id"), ("procedural", procedural, "skill_id")]:
+    for h in tbl.search(q).limit(1).to_list():
+        rows.append({"table": name, "id": h[key], "_distance": round(h["_distance"], 2),
+                     "text": (h.get("text") or h.get("steps"))[:45]})
+pd.DataFrame(rows)
 
 # %% [markdown]
 # **Join** — ตามสายจาก skill กลับไปหาเหตุการณ์ต้นทาง
@@ -90,6 +96,9 @@ episodic.search([1.0, 0.0, 0.0]).where("session = 's2'").limit(2).to_pandas()[["
 
 # %%
 from pathlib import Path
-for d in sorted(Path("data").glob("*.lance")):
-    n = len(list((d / "data").iterdir()))
-    print(f"{d.name:<18} fragments={n}")
+pd.DataFrame([{
+    "table": d.name,
+    "fragments": len(list((d / "data").iterdir())),
+    "manifests": len(list((d / "_versions").glob("*.manifest"))),
+    "bytes": sum(f.stat().st_size for f in d.rglob("*") if f.is_file()),
+} for d in sorted(Path("data").glob("*.lance"))])

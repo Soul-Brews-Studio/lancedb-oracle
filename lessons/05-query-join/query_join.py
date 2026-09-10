@@ -10,6 +10,8 @@
 
 # %%
 import lancedb
+import pandas as pd
+from IPython.display import display
 
 db = lancedb.connect("./data")
 
@@ -26,33 +28,43 @@ orders = db.create_table("orders", data=[
     {"order_id": 13, "user_id": 9, "amount": 50},  # user 9 does not exist
 ], mode="overwrite")
 
+print("users"); display(users.to_pandas())
+print("orders"); display(orders.to_pandas())
+
 # %% [markdown]
 # **Filter** `where` รับ `=` `>` `AND` `OR` `IN` `LIKE` `IS NULL`
 # `select` เลือกเฉพาะ column ที่ต้องการ อ่านน้อยลง เร็วขึ้น
 # `limit` จำเป็นเมื่อไม่มี vector search ไม่ใส่จะได้ค่า default 10
+#
+# เงื่อนไข: plan เป็น pro หรือ team **และ** ชื่อขึ้นต้น n → เหลือ nat คนเดียว (beta ตก LIKE, odin ตก IN)
 
 # %%
-users.search().where("plan IN ('pro', 'team') AND name LIKE 'n%'").select(["id", "name"]).limit(10).to_pandas()
+users.search().where("plan IN ('pro', 'team') AND name LIKE 'n%'").select(["id", "name", "plan"]).limit(10).to_pandas()
+
+# %% [markdown]
+# `amount > 100` → order 10 (300) กับ 11 (120) · order 12 (80) และ 13 (50) ตก
 
 # %%
-orders.search().where("amount > 100").to_pandas()
+orders.search().where("amount > 100").limit(10).to_pandas()
 
 # %% [markdown]
 # **Join แบบที่ 1 — pandas**
-# ดึงสองตารางออกมาเป็น DataFrame แล้ว `merge`
+# ดึงสองตารางออกมาเป็น DataFrame แล้ว `merge` ด้วย `user_id = id`
+# `how="left"` เก็บทุก order แม้ไม่เจอ user → order 13 ได้ name เป็น NaN
 # เหมาะกับตารางเล็ก ข้อมูลทั้งหมดขึ้น memory
 
 # %%
 u = users.to_pandas()
 o = orders.to_pandas()
-o.merge(u, left_on="user_id", right_on="id", how="left")[["order_id", "name", "plan", "amount"]]
+o.merge(u, left_on="user_id", right_on="id", how="left")[["order_id", "user_id", "name", "plan", "amount"]]
 
 # %% [markdown]
 # **Join แบบที่ 2 — DuckDB**
 # DuckDB อ่าน Arrow table ได้ตรง ๆ เขียน SQL เต็มรูปแบบได้เลย
 # JOIN · GROUP BY · window function ครบ ไม่ต้องแปลงอะไร
-#
 # ตัวแปร Python ที่เป็น Arrow table ใช้ชื่อใน SQL ได้ทันที
+#
+# ผลที่ควรได้: nat 2 orders รวม 420 · beta 1 order 80 · odin 0 order total NULL
 
 # %%
 import duckdb
@@ -69,13 +81,23 @@ duckdb.sql("""
 """).df()
 
 # %% [markdown]
-# order 13 ชี้ไป user 9 ที่ไม่มีอยู่
-# LanceDB ไม่มี foreign key ไม่มีใครห้าม
+# **เช็คด้วยมือ** — ผลรวมของ nat มาจากไหน
+# กรอง orders ที่ user_id = 1 แล้วบวก: 300 + 120 = 420 ตรงกับ `total` ข้างบน
+
+# %%
+nat_orders = o[o.user_id == 1][["order_id", "amount"]].copy()
+nat_orders.loc["sum"] = ["", nat_orders.amount.sum()]
+nat_orders
+
+# %% [markdown]
+# **Orphan** order 13 ชี้ไป user 9 ที่ไม่มีอยู่
+# LanceDB ไม่มี foreign key ไม่มีใครห้ามตอน insert
+# หาเจอทีหลังด้วย LEFT JOIN แล้วดูว่าฝั่ง user เป็น NULL
 # ความสัมพันธ์ระหว่างตาราง เป็นหน้าที่ของโค้ดฝั่งเรา ไม่ใช่ของ DB
 
 # %%
 duckdb.sql("""
-    SELECT o.*
+    SELECT o.order_id, o.user_id, o.amount, u.id AS matched_user
     FROM orders_arrow o
     LEFT JOIN users_arrow u ON o.user_id = u.id
     WHERE u.id IS NULL

@@ -19,17 +19,25 @@ from lesson_data import load
 
 from pathlib import Path
 import lancedb
+import pandas as pd
 
 db = lancedb.connect("./data")
 tbl = db.create_table("posts", data=load("nat_posts.jsonl"), mode="overwrite")
 
-def state(label):
+history = []
+
+def state(step):
     root = Path("data/posts.lance")
-    frags = len(list((root / "data").glob("*.lance")))
-    dels = len(list((root / "_deletions").glob("*"))) if (root / "_deletions").exists() else 0
-    vers = len(list((root / "_versions").glob("*.manifest")))
-    size = sum(f.stat().st_size for f in root.rglob("*") if f.is_file())
-    print(f"{label:<22} rows={tbl.count_rows():<3} fragments={frags:<3} deletions={dels:<3} versions={vers:<3} bytes={size}")
+    row = {
+        "step": step,
+        "rows": tbl.count_rows(),
+        "fragments": len(list((root / "data").glob("*.lance"))),
+        "deletion files": len(list((root / "_deletions").glob("*"))) if (root / "_deletions").exists() else 0,
+        "versions": len(list((root / "_versions").glob("*.manifest"))),
+        "bytes": sum(f.stat().st_size for f in root.rglob("*") if f.is_file()),
+    }
+    history.append(row)
+    print("  ".join(f"{k}={v}" for k, v in row.items()))
 
 state("start")
 
@@ -55,7 +63,7 @@ state("after 10 writes")
 
 # %%
 stats = tbl.compact_files()
-print(stats)
+print(f"compact_files: fragments_removed={stats.fragments_removed}  fragments_added={stats.fragments_added}  files_removed={stats.files_removed}  files_added={stats.files_added}")
 state("after compact_files")
 
 # %% [markdown]
@@ -68,7 +76,7 @@ state("after compact_files")
 # %%
 from datetime import timedelta
 stats = tbl.cleanup_old_versions(older_than=timedelta(0))
-print(stats)
+print(f"cleanup_old_versions: bytes_removed={stats.bytes_removed}  old_versions={stats.old_versions}")
 state("after cleanup")
 
 # %% [markdown]
@@ -81,16 +89,28 @@ state("after cleanup")
 from lancedb.index import FTS
 tbl.create_index("text", config=FTS(base_tokenizer="icu"))
 tbl.add([{"id": "x9", "date": "2026-09-10", "topic": "agents", "vector": [0.0, 1.0, 0.0], "text": "oracle ตัวใหม่ตื่นแล้ว"}])
-s = tbl.index_stats("text_idx")
-print("before optimize: found", [h["id"] for h in tbl.search("oracle", query_type="fts").limit(3).to_list()],
-      "| indexed", s.num_indexed_rows, "unindexed", s.num_unindexed_rows)
+
+def index_row(step):
+    s = tbl.index_stats("text_idx")
+    hits = tbl.search("oracle", query_type="fts").limit(3).to_list()
+    return {"step": step, "search 'oracle' finds": " ".join(h["id"] for h in hits) or "—",
+            "rows in index": s.num_indexed_rows, "rows outside index": s.num_unindexed_rows}
+
+idx = [index_row("after add, before optimize")]
 tbl.optimize(cleanup_older_than=timedelta(0))
-s = tbl.index_stats("text_idx")
-print("after optimize:  found", [h["id"] for h in tbl.search("oracle", query_type="fts").limit(3).to_list()],
-      "| indexed", s.num_indexed_rows, "unindexed", s.num_unindexed_rows)
+idx.append(index_row("after optimize"))
 state("after optimize")
+pd.DataFrame(idx)
 
 # %% [markdown]
+# **ทั้งเรื่องในตารางเดียว** — แถวละขั้น อ่านจากบนลงล่าง
+# `after 10 writes` fragment 9 · deletion 5 · version 11 · bytes โตเกือบ 6 เท่าจาก `start`
+# `after compact_files` ตัวเลขบน disk ไม่ลด กลับเพิ่ม เพราะเขียนก้อนใหม่แต่ยังไม่ทิ้งของเก่า
+# `after cleanup` กลับมา 1 · 0 · 1 นี่คือขั้นที่ลบจริง
+#
 # ตารางที่ agent เขียนทุกวันแล้วไม่เคย optimize จะโตแบบ "after 10 writes" ไปเรื่อย ๆ
 # ใน fleet มีตาราง 835 MB ที่น่าจะไม่เคยผ่านคำสั่งนี้เลย
 # `optimize(cleanup_older_than=timedelta(days=7))` วันละครั้ง คือสิ่งที่บทนี้อยากให้จำ
+
+# %%
+pd.DataFrame(history)

@@ -41,7 +41,7 @@ else:
     if not __import__("pathlib").Path("node_modules").exists():
         subprocess.run([bun, "install", "--silent"], check=True)
     out = subprocess.run([bun, "run", "open.ts"], capture_output=True, text=True, env={**os.environ, "NO_COLOR": "1"})
-    print(out.stdout or out.stderr)
+    print((out.stdout or out.stderr).rstrip())   # each line already starts with "ts" — compare with the "python" lines above
 
 # %% [markdown]
 # **เทียบชื่อ API** — สิ่งเดียวกัน คนละสะกด
@@ -62,5 +62,6 @@ else:
 
 # %%
 from pathlib import Path
-for f in sorted(Path("data/users.lance/_versions").glob("*.manifest")):
-    print(f.name, f.stat().st_size, "bytes — read by both bindings")
+import pandas as pd
+pd.DataFrame([{"file": f"_versions/{f.name}", "bytes": f.stat().st_size, "written by": "python", "read by": "python + typescript"}
+              for f in sorted(Path("data/users.lance/_versions").glob("*.manifest"))])
