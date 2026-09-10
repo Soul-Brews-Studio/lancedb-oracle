@@ -13,6 +13,11 @@ rest (versioning, indexes, compaction) stops being magic.
 |---|---|---|---|
 | 1 | [first table](lessons/01-basics/lesson1_first_table.ipynb) | table = directory; one write = one txn + one manifest + one fragment | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/01-basics/lesson1_first_table.ipynb) |
 | 2 | [vectors](lessons/01-basics/lesson2_vectors.ipynb) | `fixed_size_list<float>` column, `search()`, `_distance`, L2 vs cosine | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/01-basics/lesson2_vectors.ipynb) |
+| 3 | [ORM style](lessons/01-basics/lesson3_orm.ipynb) | Pydantic `LanceModel`, `Vector(n)`, objects in and out, validation before disk | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/01-basics/lesson3_orm.ipynb) |
+
+Code and comments are in English; the explanation cells between them are in Thai
+(อธิบายเป็นภาษาไทย โค้ดเป็นอังกฤษ). Small tables — 3 dimensions, 5 rows — so every
+number can be checked by hand.
 
 More coming: filters and hybrid search, IVF_PQ index, versions and compaction, TypeScript side by side.
 
