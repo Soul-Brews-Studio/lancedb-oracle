@@ -1,0 +1,41 @@
+// Same tiny app in every runtime: load the 11 posts, upsert one, search, look at the disk.
+// Run: bun install && bun run index.ts
+import { connect } from "@lancedb/lancedb";
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+
+const posts = (await Bun.file("../../lessons/data/nat_posts.jsonl").text())
+  .split("\n").filter(Boolean).map((l) => JSON.parse(l));
+
+// 1. connect = pick a folder. Same directory format Python wrote in the lessons.
+const db = await connect("./data");
+const tbl = await db.createTable("posts", posts, { mode: "overwrite" });
+console.log(`created  rows=${await tbl.countRows()} version=${await tbl.version()}`);
+
+// 2. upsert: p11 exists -> update; p12 is new -> insert
+await tbl.mergeInsert("id")
+  .whenMatchedUpdateAll()
+  .whenNotMatchedInsertAll()
+  .execute([
+    { ...posts[10], topic: "hardware", text: posts[10].text + " (edited)" },
+    { id: "p12", date: "2026-09-10", topic: "memory", vector: [0.95, 0.05, 0.0], text: "Lance Oracle เปิดสอน LanceDB บทที่ 1-20 แล้วครับ" },
+  ]);
+console.log(`upserted rows=${await tbl.countRows()} version=${await tbl.version()}`);
+
+// 3. vector search: nearest to the "memory" direction, hardware only (prefilter)
+const q = [1, 0, 0];
+const near = await tbl.vectorSearch(q).limit(3).toArray();
+const hard = await tbl.vectorSearch(q).where("topic = 'hardware'").limit(3).toArray();
+const show = (rows: any[]) => console.table(rows.map((r) => ({
+  id: r.id, topic: r.topic, _distance: r._distance.toFixed(2), text: String(r.text).slice(0, 40),
+})));
+console.log("nearest to [1,0,0]:"); show(near);
+console.log("nearest, topic = hardware:"); show(hard);
+
+// 4. disk: one manifest per commit, one fragment per write
+const dir = "./data/posts.lance";
+const count = (sub: string, ext: string) => readdirSync(join(dir, sub)).filter((f) => f.endsWith(ext)).length;
+const bytes = (d: string): number => readdirSync(d).reduce((n, f) => {
+  const p = join(d, f); return n + (statSync(p).isDirectory() ? bytes(p) : statSync(p).size);
+}, 0);
+console.log(`disk     fragments=${count("data", ".lance")} manifests=${count("_versions", ".manifest")} txn=${count("_transactions", ".txn")} bytes=${bytes(dir)}`);

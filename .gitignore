@@ -17,3 +17,7 @@ posts*.jsonl
 timeline_text*.jsonl
 lessons/12-typescript/node_modules/
 lessons/12-typescript/bun.lock
+apps/*/node_modules/
+apps/*/bun.lock
+apps/*/data/
+apps/*/target/
