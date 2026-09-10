@@ -17,6 +17,9 @@ rest (versioning, indexes, compaction) stops being magic.
 | 4 | [CRUD](lessons/04-crud/crud.ipynb) | `update`, `delete`, `merge_insert` upsert; `_deletions/` on disk | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/04-crud/crud.ipynb) |
 | 5 | [query & join](lessons/05-query-join/query_join.ipynb) | `where` / `select` / `limit`; no JOIN in Lance — pandas merge and DuckDB over Arrow | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/05-query-join/query_join.ipynb) |
 | 6 | [migration](lessons/06-migration/migration.ipynb) | `add_columns`, `alter_columns`, `drop_columns`; why int→float cast fails; `checkout` + `restore` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/06-migration/migration.ipynb) |
+| 13 | [multi-table memory](lessons/13-multi-table-memory/multi_table_memory.ipynb) | episodic / semantic / procedural tables; same vector into all three; DuckDB join skill → fact → event | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/13-multi-table-memory/multi_table_memory.ipynb) |
+
+Lessons 7–12 (embeddings, FTS, hybrid, compaction, IVF_PQ, TypeScript) are planned and will fill the gap.
 
 Code and comments are in English; the explanation cells between them are in Thai
 (อธิบายเป็นภาษาไทย โค้ดเป็นอังกฤษ). Small tables — 3 dimensions, 5 rows — so every

@@ -22,4 +22,6 @@ Index first. Full plan with sources and methods: `ψ/writing/lesson-plan.md`.
 ## Done
 - [x] L1–L6 `lessons/01-basics` — table, vectors, ORM, CRUD, query+join, migration (2026-09-10)
 - [x] Repo public, Colab badges, MIT (2026-09-10)
+- [x] L13 `lessons/13-multi-table-memory` — episodic/semantic/procedural, DuckDB join (2026-09-10)
+- [x] Research: course 13-20, agent memory, reading corpus in `ψ/writing/research/` (2026-09-10)
 - [x] `/awaken --fast` — identity, soul, philosophy (2026-09-10)
