@@ -3,14 +3,15 @@
 # Query: uv --project lessons run python tools/fbx/engine.py query tools/fbx/fbx.yml timeline_text
 # SQL:   uv --project lessons run python tools/fbx/engine.py sql tools/fbx/fbx.yml "select count(*) from posts"
 
-source: ~/Downloads/facebook-natwrw-2026-09-02-3n8FyPUm.zip
-lance: ~/Downloads/facebook-natwrw-2026-09-02/lance
+source: ~/Downloads/fb-exports/facebook-natwrw-*.zip   # one path or a glob/list; overlapping exports are deduped
+lance: ~/Downloads/fb-exports/lance
 decode: latin1-utf8          # undo Facebook's mojibake on every string
 
 datasets:
   posts:
     glob: your_facebook_activity/posts/your_posts*.json
     records: "$"             # the file root is the list of records
+    dedupe: [ts, title]
     fields:
       ts: timestamp
       title: title
@@ -27,6 +28,7 @@ datasets:
   messages:
     glob: your_facebook_activity/messages/inbox/*/message_*.json
     records: messages
+    dedupe: [thread, ts_ms, sender]
     context:                 # values from the file root copied onto every record
       thread: "@dir"         # folder name of the file
       participants: participants[*].name
@@ -41,6 +43,7 @@ datasets:
   comments:
     glob: your_facebook_activity/comments_and_reactions/comments.json
     records: comments_v2
+    dedupe: [ts, title]
     fields:
       ts: timestamp
       title: title

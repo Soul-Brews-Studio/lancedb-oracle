@@ -121,7 +121,7 @@ def load_dataset(z: zipfile.ZipFile, name: str, ds: dict, decode: bool):
             for col, path in ds["fields"].items():
                 row[col] = unwrap(resolve(rec, path))
             rows.append(derive(row, ds.get("derive")))
-    print(f"  {name}: {len(rows)} rows from {len(files)} files", file=sys.stderr)
+    print(f"    {z.filename.rsplit('/', 1)[-1]}: {name} {len(rows)} rows from {len(files)} files", file=sys.stderr)
     return rows
 
 
@@ -144,15 +144,48 @@ def normalize(rows):
     return rows
 
 
+def sources(cfg: dict) -> list[Path]:
+    src = cfg["source"]
+    if isinstance(src, str):
+        src = [src]
+    out = []
+    for s in src:
+        p = Path(s).expanduser()
+        out.extend(sorted(p.parent.glob(p.name)) if any(c in p.name for c in "*?[") else [p])
+    return out
+
+
+def dedupe(rows: list[dict], keys: list[str] | None):
+    if not keys:
+        return rows
+    seen, out = set(), []
+    for r in rows:
+        k = tuple(json.dumps(r.get(c), sort_keys=True, default=str) for c in keys)
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(r)
+    return out
+
+
 def cmd_load(cfg: dict):
-    src = Path(cfg["source"]).expanduser()
     db = lancedb.connect(str(Path(cfg["lance"]).expanduser()))
     decode = cfg.get("decode") == "latin1-utf8"
-    with zipfile.ZipFile(src) as z:
-        for name, ds in cfg["datasets"].items():
-            rows = normalize(load_dataset(z, name, ds, decode))
-            if rows:
-                db.create_table(name, data=rows, mode="overwrite")
+    zips = sources(cfg)
+    print(f"sources: {len(zips)}", file=sys.stderr)
+    for name, ds in cfg["datasets"].items():
+        rows = []
+        for zp in zips:
+            with zipfile.ZipFile(zp) as z:
+                got = load_dataset(z, name, ds, decode)
+                for r in got:
+                    r["source"] = zp.name
+                rows.extend(got)
+        before = len(rows)
+        rows = normalize(dedupe(rows, ds.get("dedupe")))
+        if rows:
+            db.create_table(name, data=rows, mode="overwrite")
+        print(f"  {name}: {before} -> {len(rows)} after dedupe", file=sys.stderr)
     print(f"-> {cfg['lance']}", file=sys.stderr)
 
 
