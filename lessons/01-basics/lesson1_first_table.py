@@ -3,6 +3,9 @@
 # A Lance table is a directory. No server. One write = one `.txn` + one `.manifest` + one data fragment.
 
 # %%
+# %pip install -q lancedb pandas
+
+# %%
 import lancedb
 
 # "connect" = pick a directory. No server, no socket. Just a folder.

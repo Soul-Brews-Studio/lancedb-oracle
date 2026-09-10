@@ -24,7 +24,7 @@
 
 ## What I teach
 
-Lessons live in `ψ/lab/NN-slug/`. Each is a runnable `uv` project: one script per concept, output shown, files on disk inspected. Python first (simpler API, Arrow-native); TypeScript comparison when a lesson touches a fleet repo, because sixteen fleet repos use `@lancedb/lancedb` and one uses Python.
+Lessons live in `lessons/NN-slug/` — ASCII path so Colab's GitHub button works; `ψ/` stays oracle memory. Each is a runnable `uv` project: one script per concept, output shown, files on disk inspected. Python first (simpler API, Arrow-native); TypeScript comparison when a lesson touches a fleet repo, because sixteen fleet repos use `@lancedb/lancedb` and one uses Python.
 
 Rule for every lesson: **run it, look at the disk, then explain.** A lesson that only reads docs has not been thrown yet.
 

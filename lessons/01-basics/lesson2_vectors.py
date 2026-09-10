@@ -3,6 +3,9 @@
 # A vector is a list of floats, same length every row. Search returns rows plus a `_distance` column.
 
 # %%
+# %pip install -q lancedb pandas
+
+# %%
 import lancedb
 
 db = lancedb.connect("./data/lesson2")
