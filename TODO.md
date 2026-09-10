@@ -2,7 +2,6 @@
 
 Index first. Full plan with sources and methods: `ψ/writing/lesson-plan.md`.
 
-- [ ] L7 real embeddings — `get_registry().get("sentence-transformers")`, `SourceField`/`VectorField`, 5 sentences
 - [ ] L8 full-text search — `create_fts_index`, `query_type="fts"`, `_score`, index dir on disk
 - [ ] L9 hybrid — `query_type="hybrid"`, `RRFReranker`, `_relevance_score`
 - [ ] L10 compaction + cleanup — `compact_files()` then `cleanup_old_versions()`; fragment count before/after
@@ -23,6 +22,7 @@ Index first. Full plan with sources and methods: `ψ/writing/lesson-plan.md`.
 - [x] L1–L6 `lessons/01-basics` — table, vectors, ORM, CRUD, query+join, migration (2026-09-10)
 - [x] Repo public, Colab badges, MIT (2026-09-10)
 - [x] L13 `lessons/13-multi-table-memory` — episodic/semantic/procedural, DuckDB join (2026-09-10)
+- [x] L7 `lessons/07-embeddings` — hand vectors vs multilingual MiniLM on the 11 posts (2026-09-10)
 - [x] L14 `lessons/14-prefilter-postfilter` — postfilter returns empty when top-k misses (2026-09-10)
 - [x] `tools/fbx` — YAML engine, 7 Facebook zips -> Lance, 25k posts / 1M messages (2026-09-10)
 - [x] Research: course 13-20, agent memory, reading corpus in `ψ/writing/research/` (2026-09-10)
