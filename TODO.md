@@ -2,7 +2,6 @@
 
 Index first. Full plan with sources and methods: `ψ/writing/lesson-plan.md`.
 
-- [ ] L9 hybrid — `query_type="hybrid"`, `RRFReranker`, `_relevance_score`
 - [ ] L10 compaction + cleanup — `compact_files()` then `cleanup_old_versions()`; fragment count before/after
 - [ ] L11 IVF_PQ — 5–10k random vectors, `create_index`, latency before/after (first lesson that grows)
 - [ ] L12 Python vs TypeScript — open one table from both bindings
@@ -21,6 +20,7 @@ Index first. Full plan with sources and methods: `ψ/writing/lesson-plan.md`.
 - [x] L1–L6 `lessons/01-basics` — table, vectors, ORM, CRUD, query+join, migration (2026-09-10)
 - [x] Repo public, Colab badges, MIT (2026-09-10)
 - [x] L13 `lessons/13-multi-table-memory` — episodic/semantic/procedural, DuckDB join (2026-09-10)
+- [x] L9 `lessons/09-hybrid` — vector / fts / hybrid three-way, RRF by hand (2026-09-10)
 - [x] L8 `lessons/08-fts` — create_index(FTS); simple vs icu vs ngram on Thai (2026-09-10)
 - [x] L7 `lessons/07-embeddings` — hand vectors vs multilingual MiniLM on the 11 posts (2026-09-10)
 - [x] L14 `lessons/14-prefilter-postfilter` — postfilter returns empty when top-k misses (2026-09-10)
