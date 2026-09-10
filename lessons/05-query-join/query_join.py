@@ -11,7 +11,7 @@
 # %%
 import lancedb
 
-db = lancedb.connect("./data/lesson5")
+db = lancedb.connect("./data")
 
 users = db.create_table("users", data=[
     {"id": 1, "name": "nat",  "plan": "team"},

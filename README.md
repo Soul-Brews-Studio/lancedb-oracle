@@ -11,12 +11,12 @@ rest (versioning, indexes, compaction) stops being magic.
 
 | # | Notebook | What you learn | Open |
 |---|---|---|---|
-| 1 | [first table](lessons/01-basics/lesson1_first_table.ipynb) | table = directory; one write = one txn + one manifest + one fragment | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/01-basics/lesson1_first_table.ipynb) |
-| 2 | [vectors](lessons/01-basics/lesson2_vectors.ipynb) | `fixed_size_list<float>` column, `search()`, `_distance`, L2 vs cosine | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/01-basics/lesson2_vectors.ipynb) |
-| 3 | [ORM style](lessons/01-basics/lesson3_orm.ipynb) | Pydantic `LanceModel`, `Vector(n)`, objects in and out, validation before disk | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/01-basics/lesson3_orm.ipynb) |
-| 4 | [CRUD](lessons/01-basics/lesson4_crud.ipynb) | `update`, `delete`, `merge_insert` upsert; `_deletions/` on disk | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/01-basics/lesson4_crud.ipynb) |
-| 5 | [query & join](lessons/01-basics/lesson5_query_join.ipynb) | `where` / `select` / `limit`; no JOIN in Lance — pandas merge and DuckDB over Arrow | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/01-basics/lesson5_query_join.ipynb) |
-| 6 | [migration](lessons/01-basics/lesson6_migration.ipynb) | `add_columns`, `alter_columns`, `drop_columns`; why int→float cast fails; `checkout` + `restore` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/01-basics/lesson6_migration.ipynb) |
+| 1 | [first table](lessons/01-first-table/first_table.ipynb) | table = directory; one write = one txn + one manifest + one fragment | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/01-first-table/first_table.ipynb) |
+| 2 | [vectors](lessons/02-vectors/vectors.ipynb) | `fixed_size_list<float>` column, `search()`, `_distance`, L2 vs cosine | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/02-vectors/vectors.ipynb) |
+| 3 | [ORM style](lessons/03-orm/orm.ipynb) | Pydantic `LanceModel`, `Vector(n)`, objects in and out, validation before disk | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/03-orm/orm.ipynb) |
+| 4 | [CRUD](lessons/04-crud/crud.ipynb) | `update`, `delete`, `merge_insert` upsert; `_deletions/` on disk | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/04-crud/crud.ipynb) |
+| 5 | [query & join](lessons/05-query-join/query_join.ipynb) | `where` / `select` / `limit`; no JOIN in Lance — pandas merge and DuckDB over Arrow | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/05-query-join/query_join.ipynb) |
+| 6 | [migration](lessons/06-migration/migration.ipynb) | `add_columns`, `alter_columns`, `drop_columns`; why int→float cast fails; `checkout` + `restore` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Soul-Brews-Studio/lancedb-oracle/blob/main/lessons/06-migration/migration.ipynb) |
 
 Code and comments are in English; the explanation cells between them are in Thai
 (อธิบายเป็นภาษาไทย โค้ดเป็นอังกฤษ). Small tables — 3 dimensions, 5 rows — so every
@@ -27,11 +27,12 @@ More coming: filters and hybrid search, IVF_PQ index, versions and compaction, T
 ## Run locally
 
 ```sh
-cd lessons/01-basics
+cd lessons
 just setup      # uv sync + register Jupyter kernel
 just run 1      # execute lesson 1, print every cell's output
+just all        # every lesson in order
 just lab        # JupyterLab on http://localhost:8888
-just tree       # see what the lesson wrote to disk
+just tree 4     # see what lesson 4 wrote to disk
 ```
 
 The `.py` files are the source; notebooks are generated from them with

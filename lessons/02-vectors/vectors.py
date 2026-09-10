@@ -11,7 +11,7 @@
 # %%
 import lancedb
 
-db = lancedb.connect("./data/lesson2")
+db = lancedb.connect("./data")
 
 # %% [markdown]
 # column ชื่อ `vector` ใส่ list ของ float เข้าไป

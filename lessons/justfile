@@ -1,0 +1,40 @@
+set shell := ["zsh", "-cu"]
+
+default:
+    @just --list
+
+# one-time: install deps + register this venv as a Jupyter kernel
+setup:
+    uv sync
+    uv run python -m ipykernel install --user --name lancedb-lab --display-name "lancedb-lab"
+
+# run one lesson as a notebook, print cell outputs: just run 3
+run n:
+    #!/usr/bin/env zsh
+    set -eu
+    setopt null_glob
+    d=$(ls -d 0{{n}}-* {{n}}-* | head -1)
+    cd "$d"
+    rm -rf data
+    uv run jupytext --set-kernel python3 --to ipynb --execute *.py >/dev/null 2>&1
+    uv run jupyter nbconvert --to markdown --stdout --NbConvertBase.display_data_priority='["text/plain"]' *.ipynb 2>/dev/null | rg -v '^\s*$|WARN'
+
+# run every lesson in order
+all:
+    for d in [0-9]*-*/; do just run ${d%%-*}; done
+
+# rebuild notebooks without executing
+nb:
+    for d in 0*-*/; do (cd $d && uv run jupytext --set-kernel python3 --to ipynb *.py); done
+
+# open JupyterLab over all lessons
+lab:
+    uv run jupyter lab --notebook-dir=. --port 8888
+
+# show what a lesson left on disk: just tree 4
+tree n:
+    setopt null_glob; tree $(ls -d 0{{n}}-* {{n}}-* | head -1)/data
+
+# wipe generated Lance tables
+clean:
+    rm -rf 0*-*/data 0*-*/.ipynb_checkpoints

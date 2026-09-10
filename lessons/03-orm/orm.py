@@ -23,7 +23,7 @@ class Point(LanceModel):
     vector: Vector(3)
 
 
-db = lancedb.connect("./data/lesson3")
+db = lancedb.connect("./data")
 tbl = db.create_table("points", schema=Point, mode="overwrite")
 tbl.schema
 

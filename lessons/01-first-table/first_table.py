@@ -15,7 +15,7 @@
 # %%
 import lancedb
 
-db = lancedb.connect("./data/lesson1")
+db = lancedb.connect("./data")
 
 # %% [markdown]
 # ส่ง list ของ dict เข้าไป schema เดาให้เอง
@@ -67,4 +67,4 @@ def tree(root: Path, prefix: str = ""):
         if p.is_dir():
             tree(p, prefix + ("    " if last else "│   "))
 
-tree(Path("data/lesson1/repos.lance"))
+tree(Path("data/repos.lance"))

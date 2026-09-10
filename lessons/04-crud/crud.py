@@ -20,7 +20,7 @@ def tree(root: Path, prefix: str = ""):
         if p.is_dir():
             tree(p, prefix + ("    " if last else "│   "))
 
-db = lancedb.connect("./data/lesson4")
+db = lancedb.connect("./data")
 
 # %% [markdown]
 # **Create** ตารางไม่มี vector เลย column ธรรมดาสามอัน
@@ -72,4 +72,4 @@ tbl.to_pandas()
 
 # %%
 print("version:", tbl.version)
-tree(Path("data/lesson4/users.lance"))
+tree(Path("data/users.lance"))
