@@ -1,0 +1,11 @@
+{"id": "p01", "date": "2026-08-28", "topic": "memory",   "vector": [0.9, 0.1, 0.0], "text": "ยอมกลับมาทำ Memory เพราะซาบซึ้งว่ามันต้องทำแล้วครับ ARRA Oracle Memory สามารถทำให้ claude บนเว็ป คุยกับชาวแก๊งอื่นๆได้แล้วครับ แล้วจะพาทำ Workshop สร้าง Memory และ MCP ด้วยตัวเองนะครับ"}
+{"id": "p02", "date": "2026-08-20", "topic": "memory",   "vector": [1.0, 0.0, 0.0], "text": "หนังสือ... บันทึกการ... ค่อยๆสร้าง Vector database จาก Sqlite แบบค่อยเป็นค่อยไปค้าบบ ตอนที่ 1 ครับ"}
+{"id": "p03", "date": "2026-08-15", "topic": "memory",   "vector": [0.8, 0.2, 0.0], "text": "ความทรงจำระหว่างบรรทัดของ Human และ Claude Code ครับ"}
+{"id": "p04", "date": "2026-07-31", "topic": "memory",   "vector": [0.9, 0.0, 0.1], "text": "ทำอินเด็กซ์ Embedding เข้าสู่ Vector Space อีกครั้ง มีข้อความที่คุยกับ AI จำนวนล้านกว่าๆ ไว้ให้ AI ย้อนอดีตครับ บทสนทนา ล้านนึง Vault สี่หมื่น"}
+{"id": "p05", "date": "2026-06-22", "topic": "memory",   "vector": [0.7, 0.3, 0.0], "text": "Visualize ว่า เรา หรือใคร คุยกับ AI ด้วยเรื่องอะไร หมวดหมู่อะไรบ้างครับ Vector Database Lab ถอด Portal เข้าออกได้จากใน ARRA Oracle MCP"}
+{"id": "p06", "date": "2026-08-20", "topic": "agents",   "vector": [0.1, 0.9, 0.0], "text": "Claude Code ใน Messenger ครับ ทำเสร็จแล้วจะไปไล่ตอบแชทค้าบบ 555"}
+{"id": "p07", "date": "2026-06-17", "topic": "agents",   "vector": [0.0, 1.0, 0.0], "text": "เข้าสู่ยุค Multi-Agents แบบเต็มตัว.... Claude Codex ไปสั่ง Haiku เพื่อเราจะได้สั่ง headless codex ได้และควบคุมได้ และยังมี Codex อีก 5 Tab ทำงาน เร็วแรงทะลุนรก"}
+{"id": "p08", "date": "2026-05-20", "topic": "agents",   "vector": [0.1, 0.9, 0.0], "text": "Multi Agent แบบ Team .... ของ Claude Code เพื่อเรียก SendMessage เราสามารถ Spawn เองได้.... และสั่งกันเอง... แบบบำเพ็ญเพียรครับ Multi Agent แบบข้ามยี่ห้อดีกว่ากันเยอะมากครับ 555"}
+{"id": "p09", "date": "2026-05-31", "topic": "hardware", "vector": [0.0, 0.3, 0.7], "text": "ทำเฟิร์มแวร์เอา Claude Code มาออกจอเลยครับ พนักงาน ai ตัวจิ๋ว เริ่มงานในบริษัทแล้วครับ เลือกได้ด้วยว่าจะเอาใครมาแสดงหรือจะเพิ่มจอก็ได้"}
+{"id": "p10", "date": "2026-05-30", "topic": "hardware", "vector": [0.0, 0.2, 0.8], "text": "เอาจอ มาต่อ Claude Code BLE Bridge ลองแล้ว เท่จัด สนุกจัดครับ 5555"}
+{"id": "p11", "date": "2026-06-28", "topic": "hardware", "vector": [0.0, 0.0, 1.0], "text": "เตรียมตัวแปลงร่างกันครับ! รอบทความแผ้บบบบ ของมาแล้วครับ! https://esp32.buildwithoracle.com/#pet-lvgl"}

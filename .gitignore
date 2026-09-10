@@ -8,7 +8,7 @@ node_modules/
 .DS_Store
 
 # Lance tables are build artifacts of lessons — regenerate, never commit
-lessons/**/data/
+lessons/[0-9]*/data/
 .ipynb_checkpoints/
 
 # personal data pulled by tools/, never commit
