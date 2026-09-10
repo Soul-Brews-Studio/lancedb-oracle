@@ -1,0 +1,72 @@
+# fbx — Facebook export -> LanceDB, declared in YAML
+# Load:  uv --project lessons run python tools/fbx/engine.py load tools/fbx/fbx.yml
+# Query: uv --project lessons run python tools/fbx/engine.py query tools/fbx/fbx.yml timeline_text
+# SQL:   uv --project lessons run python tools/fbx/engine.py sql tools/fbx/fbx.yml "select count(*) from posts"
+
+source: ~/Downloads/facebook-natwrw-2026-09-02-3n8FyPUm.zip
+lance: ~/Downloads/facebook-natwrw-2026-09-02/lance
+decode: latin1-utf8          # undo Facebook's mojibake on every string
+
+datasets:
+  posts:
+    glob: your_facebook_activity/posts/your_posts*.json
+    records: "$"             # the file root is the list of records
+    fields:
+      ts: timestamp
+      title: title
+      text: data[*].post
+      links: attachments[*].data[*].external_context.url
+      media: attachments[*].data[*].media.uri
+    derive:
+      date: from_unix(ts)
+      group: 'regex(title, r" to the group: (.+)\.$")'
+      destination: "'group' if group else 'timeline'"
+      kind: 'regex(title, r"^\S+ \S+ (.+?)\.?$")'
+      audience: "None"       # export carries no per-post privacy; keep the column, keep it honest
+
+  messages:
+    glob: your_facebook_activity/messages/inbox/*/message_*.json
+    records: messages
+    context:                 # values from the file root copied onto every record
+      thread: "@dir"         # folder name of the file
+      participants: participants[*].name
+    fields:
+      ts_ms: timestamp_ms
+      sender: sender_name
+      text: content
+    derive:
+      ts: ts_ms // 1000
+      date: from_unix(ts)
+
+  comments:
+    glob: your_facebook_activity/comments_and_reactions/comments.json
+    records: comments_v2
+    fields:
+      ts: timestamp
+      title: title
+      text: data[*].comment.comment
+    derive:
+      date: from_unix(ts)
+
+queries:
+  timeline_text: >
+    SELECT date, kind, text
+    FROM posts
+    WHERE destination = 'timeline' AND text IS NOT NULL
+    ORDER BY ts DESC
+
+  posts_by_kind: >
+    SELECT kind, count(*) AS n FROM posts GROUP BY kind ORDER BY n DESC
+
+  busiest_threads: >
+    SELECT thread, count(*) AS msgs, min(date) AS first, max(date) AS last
+    FROM messages GROUP BY thread ORDER BY msgs DESC LIMIT 10
+
+  my_messages_per_day: >
+    SELECT substr(date, 1, 10) AS day, count(*) AS n
+    FROM messages WHERE sender = 'Nat Weerawan'
+    GROUP BY day ORDER BY day
+
+  comments_on_others: >
+    SELECT date, title, text FROM comments
+    WHERE title NOT LIKE '%his own%' ORDER BY ts DESC

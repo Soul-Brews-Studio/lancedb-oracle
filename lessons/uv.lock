@@ -22,6 +22,7 @@ dependencies = [
     { name = "pandas" },
     { name = "pip" },
     { name = "pyarrow" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
@@ -33,6 +34,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=3.0.5" },
     { name = "pip", specifier = ">=26.2.1" },
     { name = "pyarrow", specifier = ">=25.0.1" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
 ]
 
 [[package]]
