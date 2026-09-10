@@ -9,3 +9,6 @@ node_modules/
 
 # Lance tables are build artifacts of lessons — regenerate, never commit
 ψ/lab/**/data/
+# notebooks are generated from .py by jupytext
+ψ/lab/**/*.ipynb
+.ipynb_checkpoints/
