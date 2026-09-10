@@ -1,0 +1,14 @@
+[package]
+name = "lancedb-demo-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# 0.38.0 does not compile with default features: job.rs uses Error::Http, which is gated behind "remote"
+lancedb = { version = "0.38.0", features = ["remote"] }
+arrow-array = "58"
+arrow-schema = "58"
+futures = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

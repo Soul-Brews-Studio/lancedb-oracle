@@ -14,7 +14,7 @@ One script per runtime, identical behaviour, so the APIs can be diffed side by s
 | [bun](bun/) | `@lancedb/lancedb` | 0.38.0 | `cd apps/bun && bun install && bun start` |
 | [node](node/) | `@lancedb/lancedb` | 0.27.2 (fleet pin) | `cd apps/node && npm install && npm start` |
 | [python](python/) | `lancedb` | 0.38.0 | `cd apps/python && uv sync && uv run main.py` |
-| rust | `lancedb` crate | — | planned |
+| [rust](rust/) | `lancedb` crate | 0.38.0 (`features = ["remote"]`) | `cd apps/rust && cargo run --release` |
 
 Every runtime writes the same directory layout; any of them can open a table the other wrote.
 
@@ -24,5 +24,6 @@ Every runtime writes the same directory layout; any of them can open a table the
 - Cross-version reads both ways: 0.38 opens the 0.27.2 table and 0.27.2 opens the 0.38 table — 12 rows, version 2, nearest `p02` in both.
 - On disk, 0.38 writes `_versions/latest_version_hint.json`; 0.27.2 does not (same absence lesson 20 saw on S3). Manifests are a few bytes different (694/732 vs 799/845); fragments within 2%.
 - Python 0.38.0 and bun 0.38.0 write byte-identical directories (9412 bytes). Method names differ only in case: `merge_insert` / `mergeInsert`, `when_matched_update_all` / `whenMatchedUpdateAll`, `search(q)` / `vectorSearch(q)`, `to_pandas()` / `toArray()`. Python is sync; TS is `await` everywhere.
+- **Rust crate 0.38.0 does not compile with default features**: `src/job.rs` uses `Error::Http`, which is only defined under `#[cfg(feature = "remote")]`. `features = ["remote"]` fixes it (pulls reqwest). The Rust app is ~90 lines vs ~40 in the others: columns are built as Arrow arrays by hand (`StringArray`, `FixedSizeListArray::from_iter_primitive`), no dict rows. Same output, same disk (9348 bytes; a few bytes less than Python/bun — no `date` stats?), 260 MB release binary.
 - **FTS is where 0.27.2 breaks.** `tbl.createIndex("text", { config: Index.fts({ baseTokenizer: "icu" }) })` is the same call in both, but 0.27.2 ships `lance-index 4.0.0` which throws `unknown base tokenizer icu`. Thai word segmentation (lesson 8) is unavailable on the fleet pin; `ngram` still works there and finds p09 p10 for "จอ". The fleet's nine 0.27.2 repos cannot do proper Thai FTS without an upgrade.
 - The Python-side deprecations the lessons hit (`create_fts_index`, `create_scalar_index`, `compact_files`/`cleanup_old_versions`) are Python-only names; the TS surface (`createIndex` + `Index.fts()`) was already the new shape in 0.27.2.
