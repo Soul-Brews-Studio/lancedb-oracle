@@ -1,0 +1,11 @@
+.envrc
+.env
+.env.*
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
+
+# Lance tables are build artifacts of lessons — regenerate, never commit
+ψ/lab/**/data/
