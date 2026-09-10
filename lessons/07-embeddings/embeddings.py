@@ -93,3 +93,42 @@ from pathlib import Path
 for name in ("hand", "auto"):
     size = sum(f.stat().st_size for f in Path(f"data/{name}.lance/data").glob("*.lance"))
     print(f"{name:<5} {size:>7} bytes")
+
+# %% [markdown]
+# **ดูด้วยตา** — ย่อทั้งสอง space ลงมา 2 มิติด้วย PCA แล้ววางคู่กัน
+# ซ้าย vector ทำมือ สามหัวข้อแยกเป็นสามกอชัดเจน เพราะเราวางเอง
+# ขวา vector จากโมเดล กอไม่ชัดเท่า p03 p06 p10 ลอยไปหากันข้ามหัวข้อ ตรงกับตารางข้างบน
+# แกน PCA ไม่มีความหมายในตัว ดูแค่ว่าใครอยู่ใกล้ใคร
+
+# %%
+import numpy as np
+import matplotlib.pyplot as plt
+
+COLORS = {"memory": "#2a78d6", "agents": "#eb6834", "hardware": "#1baf7a"}
+
+def pca2(X):
+    X = np.asarray(X, dtype=float)
+    X = X - X.mean(axis=0)
+    _, _, vt = np.linalg.svd(X, full_matrices=False)
+    return X @ vt[:2].T
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 4.6))
+for ax, tbl, title in [(axes[0], hand, "hand-made, 3 dims"), (axes[1], auto, "MiniLM, 384 dims")]:
+    df = tbl.to_pandas().sort_values("id")
+    xy = pca2(np.stack(df["vector"].to_numpy()))
+    seen = {}
+    for (x, y), pid, tp in zip(xy, df["id"], df["topic"]):
+        ax.scatter(x, y, s=90, color=COLORS[tp], edgecolor="white", linewidth=1.5, zorder=3)
+        key = (round(x, 2), round(y, 2))
+        n = seen[key] = seen.get(key, 0) + 1          # identical vectors land on one dot
+        dx, dy = [(6, 4), (6, -12), (-24, 4)][min(n - 1, 2)]
+        ax.annotate(pid, (x, y), xytext=(dx, dy), textcoords="offset points", fontsize=9, color="#333", zorder=4)
+    ax.set_title(title, fontsize=11, loc="left")
+    ax.set_xticks([]); ax.set_yticks([])
+    for s in ax.spines.values():
+        s.set_color("#ddd")
+handles = [plt.Line2D([], [], marker="o", ls="", ms=8, color=c, label=t) for t, c in COLORS.items()]
+fig.legend(handles=handles, loc="upper right", ncol=3, frameon=False, fontsize=9, bbox_to_anchor=(0.99, 1.0))
+fig.suptitle("same 11 posts, two vector spaces (PCA to 2D)", fontsize=12, x=0.01, ha="left")
+plt.tight_layout(rect=(0, 0, 1, 0.95))
+plt.show()
