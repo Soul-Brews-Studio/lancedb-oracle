@@ -57,4 +57,14 @@ print("count:", tbl.count_rows(), "| version:", tbl.version)
 # ไฟล์เก่ายังอยู่ จนกว่าจะสั่ง cleanup เอง (บทที่ 5)
 
 # %%
-# !find data/lesson1 -type f | sort
+from pathlib import Path
+
+def tree(root: Path, prefix: str = ""):
+    kids = sorted(root.iterdir(), key=lambda p: (p.is_file(), p.name))
+    for i, p in enumerate(kids):
+        last = i == len(kids) - 1
+        print(prefix + ("└── " if last else "├── ") + p.name)
+        if p.is_dir():
+            tree(p, prefix + ("    " if last else "│   "))
+
+tree(Path("data/lesson1/repos.lance"))

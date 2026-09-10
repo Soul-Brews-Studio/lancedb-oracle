@@ -10,6 +10,7 @@ setup:
 
 # run a lesson as a notebook, print cell outputs: just run 1
 run n:
+    rm -rf data/lesson{{n}}
     uv run jupytext --set-kernel python3 --to ipynb --execute lesson{{n}}_*.py >/dev/null 2>&1
     uv run jupyter nbconvert --to markdown --stdout --NbConvertBase.display_data_priority='["text/plain"]' lesson{{n}}_*.ipynb 2>/dev/null | rg -v '^\s*$|WARN'
 
