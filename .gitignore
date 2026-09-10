@@ -10,3 +10,6 @@ node_modules/
 # Lance tables are build artifacts of lessons — regenerate, never commit
 lessons/**/data/
 .ipynb_checkpoints/
+
+# personal data pulled by tools/, never commit
+public_posts*.jsonl
