@@ -13,3 +13,5 @@ lessons/**/data/
 
 # personal data pulled by tools/, never commit
 public_posts*.jsonl
+posts*.jsonl
+timeline_text*.jsonl
